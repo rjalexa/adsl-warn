@@ -1,3 +1,4 @@
 # adsl-warn
 Email you when your ADSL line drops under certain threshold
-(based on Ookla's official speedtest CLI)
+Based on Ookla's official speedtest CLI
+https://www.speedtest.net/apps/cli

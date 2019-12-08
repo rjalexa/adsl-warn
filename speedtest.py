@@ -4,7 +4,7 @@ import json
 import dateutil.parser as dparser
 import smtplib
 
-sender = "Robert Alexander <gogonegro@gmail.com>"
+sender = "SpeedTest Monitor <noreply@gmail.com>"
 receiver = "Robert Alexander <gogonegro@gmail.com>"
 
 process = subprocess.Popen(['/usr/local/bin/speedtest', '-f', 'json'],

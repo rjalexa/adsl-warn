@@ -6,8 +6,8 @@ import dateutil.parser as dparser
 
 SENDER = "SpeedTest Monitor <noreply@gmail.com>"
 RECEIVER = "Robert Alexander <gogonegro@gmail.com>"
-SMTP_USER = "86aa40c0e245e2"
-SMTP_PASS = "827278518085d6"
+SMTP_USER = "86aa40c0e245e2" # Your mailtrap.io userid
+SMTP_PASS = "827278518085d6" # Your mailtrap.io password 
 
 def st_json():
     """Run Ookla's speedtest and return JSON data"""

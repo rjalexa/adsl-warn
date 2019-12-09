@@ -35,17 +35,17 @@ def send_msg(testtime, json_data):
     {json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
     Timestamp (UTC): {testtime}
     """
-    print(f'{testtime} UTC - {json_data["isp"]} - {json_data["download"]["bandwidth"]/124950:3.1f} Mbps') # DEBUG 
+    print(f'{testtime} UTC - {json_data["isp"]} - {json_data["download"]["bandwidth"]/124950:3.1f} Mbps') # DEBUG
     with smtplib.SMTP("smtp.mailtrap.io", 2525) as server:
         server.login(SMTP_USER, SMTP_PASS)
         server.sendmail(SENDER, RECEIVER, message)
 
 def main():
     """Main program."""
-    jd = st_json()
-    testtime = dparser.parse(jd["timestamp"])\
+    j_d = st_json()
+    testtime = dparser.parse(j_d["timestamp"])\
                .strftime("%A, %-d %b %Y at %H:%M:%S")
-    send_msg(testtime, jd)
+    send_msg(testtime, j_d)
 
 if __name__ == "__main__":
     main()

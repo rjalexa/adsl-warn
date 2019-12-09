@@ -1,0 +1,6 @@
+1) Have a copy of Ookla's SpeedTest CLI installed in /usr/local/bin
+    https://www.speedtest.net/apps/cli
+    Note: run it from the command line the first time to confirm
+    related terms and conditions.
+2) Have a valid Mailtrap account and credentials (Free plan suffices)
+    https://mailtrap.io

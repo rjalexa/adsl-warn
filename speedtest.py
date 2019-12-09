@@ -6,8 +6,8 @@ import dateutil.parser as dparser
 
 SENDER = "SpeedTest Monitor <noreply@gmail.com>"
 RECEIVER = "Robert Alexander <gogonegro@gmail.com>"
-SMTP_USER = "86aa40c0e245e2"  # Your mailtrap.io userid
-SMTP_PASS = "827278518085d6"  # Your mailtrap.io password
+SMTP_USER = "dc8fff528054fc"  # Your mailtrap.io userid
+SMTP_PASS = "0ade5d9930c752"  # Your mailtrap.io password
 
 
 def st_json():
@@ -37,12 +37,16 @@ def send_msg(testtime, json_data):
     {json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
     Timestamp (UTC): {testtime}
     """
-    print(f'{testtime} UTC - {json_data["isp"]} -\
-            {json_data["download"]["bandwidth"]/124950:3.1f} Mbps')  # DEBUG
-    with smtplib.SMTP("smtp.mailtrap.io", 2525) as server:
-        server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(SENDER, RECEIVER, message)
-
+    try:
+        smtpObj = smtplib.SMTP("smtp.mailtrap.io", 2525)
+        smtpObj.login(SMTP_USER, SMTP_PASS)
+        smtpObj.sendmail(SENDER, RECEIVER, message)
+        smtpObj.quit()
+        print("Email successfully sent!")
+    except smtplib.SMTPResponseException as e:
+        error_code = e.smtp_code
+        error_message = e.smtp_error
+        print(f'SMTP error: {error_code}, SMTP msg: {error_message}')
 
 def main():
     """Run a speedtest and send email warning if under threshold."""

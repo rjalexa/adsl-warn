@@ -1,17 +1,14 @@
 """docstring."""
-import subprocess
-import json
-import smtplib
-import dateutil.parser as dparser
 
-SENDER = "SpeedTest Monitor <noreply@gmail.com>"
-RECEIVER = "Robert Alexander <gogonegro@gmail.com>"
-SMTP_USER = "dc8fff528054fc"  # Your mailtrap.io userid
-SMTP_PASS = "0ade5d9930c752"  # Your mailtrap.io password
+TD = 210  # Threshold for download speed
+TU = 28   # Threshold for upload speed
+TL = 0    # Threshold for packet loss
 
 
 def st_json():
     """Run Ookla's speedtest and return JSON data."""
+    import json
+    import subprocess
     process = subprocess.Popen(['/usr/local/bin/speedtest', '-f', 'json'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
@@ -20,12 +17,18 @@ def st_json():
     return json_data
 
 
-def send_msg(testtime, json_data):
+def send_msg(subject, testtime, json_data):
     """Send an email to desired server with speedtest warning."""
-    message = f"""\
-    Subject: ADSL warning {testtime} UTC
-    To: {RECEIVER}
-    From: {RECEIVER}
+    import smtplib
+
+    sender = "SpeedTest Monitor <noreply@gmail.com>"
+    receiver = "Robert Alexander <gogonegro@gmail.com>"
+    smtp_user = "dc8fff528054fc"  # Your mailtrap.io userid
+    smtp_pass = "0ade5d9930c752"  # Your mailtrap.io password
+
+    message = f"""{subject}
+    To: {receiver}
+    From: {sender}
 
     Your {json_data["isp"]} ADSL line performance is currently
     below the threshold.
@@ -37,23 +40,41 @@ def send_msg(testtime, json_data):
     {json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
     Timestamp (UTC): {testtime}
     """
+
     try:
         smtpObj = smtplib.SMTP("smtp.mailtrap.io", 2525)
-        smtpObj.login(SMTP_USER, SMTP_PASS)
-        smtpObj.sendmail(SENDER, RECEIVER, message)
+        smtpObj.set_debuglevel(0)
+        smtpObj.ehlo("gmail.com")
+        smtpObj.login(smtp_user, smtp_pass)
+        smtpObj.sendmail(sender, receiver, message)
         smtpObj.quit()
-        print("Email successfully sent!")
     except smtplib.SMTPResponseException as e:
         error_code = e.smtp_code
         error_message = e.smtp_error
         print(f'SMTP error: {error_code}, SMTP msg: {error_message}')
 
+
 def main():
     """Run a speedtest and send email warning if under threshold."""
+    import dateutil.parser as dparser
     j_d = st_json()
     testtime = dparser.parse(j_d["timestamp"]).strftime("%A, %-d %b %Y at %H:%M:%S")
-    send_msg(testtime, j_d)
-
+    subject_td = subject_tu = subject_tl = ""
+    anomalies = 0
+    if (j_d["download"]["bandwidth"]/124950 < TD):
+        subject_td = "Download low"
+        anomalies += 1
+    if (j_d["upload"]["bandwidth"]/124950 < TU):
+        subject_tu = "Upload low"
+        anomalies += 1
+    if (j_d["packetLoss"] > TL):
+        subject_tl = "Packet loss"
+        anomalies += 1
+    if (anomalies > 0):
+        subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
+        send_msg(subject, testtime, j_d)
+    else:
+        print("No anomaly measured. All good.")
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,7 @@
 """docstring."""
 
-TD = 210  # Threshold for download speed
-TU = 28   # Threshold for upload speed
+TD = 200  # Threshold for download speed
+TU = 25  # Threshold for upload speed
 TL = 0    # Threshold for packet loss
 
 
@@ -26,7 +26,7 @@ def send_msg(subject, testtime, json_data):
     smtp_user = "dc8fff528054fc"  # Your mailtrap.io userid
     smtp_pass = "0ade5d9930c752"  # Your mailtrap.io password
 
-    message = f"""{subject}
+    message = f"""Subject: {subject}
 To: {receiver}
 From: {sender}
 
@@ -62,19 +62,20 @@ def main():
     subject_td = subject_tu = subject_tl = ""
     anomalies = 0
     if (j_d["download"]["bandwidth"]/124950 < TD):
-        subject_td = "Download low"
+        subject_td = f'DL:{j_d["download"]["bandwidth"]/124950:3.1f}'
         anomalies += 1
     if (j_d["upload"]["bandwidth"]/124950 < TU):
-        subject_tu = "Upload low"
+        subject_tu = f'UL:{j_d["upload"]["bandwidth"]/124950:2.1f}'
         anomalies += 1
     if (j_d["packetLoss"] > TL):
-        subject_tl = "Packet loss"
+        subject_tl = f'PL:{j_d["packetLoss"]:3.0f}'
         anomalies += 1
     if (anomalies > 0):
-        subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
+        subject = f'ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold.'
+        print(f'Subject: {subject}.')
         send_msg(subject, testtime, j_d)
     else:
-        print("No anomaly measured. All good.")
+        print(f"No anomaly measured. All good.")
 
 
 if __name__ == "__main__":

@@ -27,20 +27,20 @@ def send_msg(subject, testtime, json_data):
     smtp_pass = "0ade5d9930c752"  # Your mailtrap.io password
 
     message = f"""{subject}
-    To: {receiver}
-    From: {sender}
+To: {receiver}
+From: {sender}
 
-    Your {json_data["isp"]} ADSL line performance is currently
-    below the threshold.
+Your {json_data["isp"]} ADSL line performance is currently
+below the threshold.
 
-    Download: {json_data["download"]["bandwidth"]/124950:3.1f} Mbps
-    Upload  : {json_data["upload"]["bandwidth"]/124950:2.1f} Mbps
+Download: {json_data["download"]["bandwidth"]/124950:3.1f} Mbps
+Upload  : {json_data["upload"]["bandwidth"]/124950:2.1f} Mbps
 
-    Tested on {json_data["server"]["name"]} server with
-    {json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
-    Timestamp (UTC): {testtime}
-    """
-
+Tested on {json_data["server"]["name"]} server with
+{json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
+Timestamp (UTC): {testtime}
+"""
+    print(message)  # DEBUG
     try:
         smtpObj = smtplib.SMTP("smtp.mailtrap.io", 2525)
         smtpObj.set_debuglevel(0)
@@ -75,6 +75,7 @@ def main():
         send_msg(subject, testtime, j_d)
     else:
         print("No anomaly measured. All good.")
+
 
 if __name__ == "__main__":
     main()

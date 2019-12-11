@@ -1,8 +1,8 @@
 """docstring."""
 
-TD = 200  # Threshold for download speed
-TU = 25  # Threshold for upload speed
-TL = 0    # Threshold for packet loss
+TD = 200  # Threshold for download speed alert (if below)
+TU = 25   # Threshold for upload speed alert (if below)
+TL = 0    # Threshold for packet loss alert (if exceeded)
 
 
 def st_json():
@@ -22,7 +22,7 @@ def send_msg(subject, testtime, json_data):
     import smtplib
 
     sender = "SpeedTest Monitor <noreply@gmail.com>"
-    receiver = "Robert Alexander <gogonegro@gmail.com>"
+    receiver = "Bob Alexander <gogone@gmail.com>"
     smtp_user = "dc8fff528054fc"  # Your mailtrap.io userid
     smtp_pass = "0ade5d9930c752"  # Your mailtrap.io password
 

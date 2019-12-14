@@ -1,4 +1,8 @@
 """docstring."""
+import json
+import subprocess
+import yagmail
+import dateutil.parser as dparser
 
 TD = 210  # Threshold for download speed
 TU = 28   # Threshold for upload speed
@@ -7,8 +11,6 @@ TL = 0    # Threshold for packet loss
 
 def st_json():
     """Run Ookla's speedtest and return JSON data."""
-    import json
-    import subprocess
     process = subprocess.Popen(['/usr/local/bin/speedtest', '-f', 'json'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
@@ -17,19 +19,11 @@ def st_json():
     return json_data
 
 
-def send_msg(subject, testtime, json_data):
+def send_errmsg(subject, testtime, json_data):
     """Send an email to desired server with speedtest warning."""
-    import smtplib
-
-    sender = "SpeedTest Monitor <noreply@gmail.com>"
-    receiver = "Robert Alexander <gogonegro@gmail.com>"
-    smtp_user = "dc8fff528054fc"  # Your mailtrap.io userid
-    smtp_pass = "0ade5d9930c752"  # Your mailtrap.io password
-
-    message = f"""{subject}
-To: {receiver}
-From: {sender}
-
+    sender = "rjaalerts@gmail.com"
+    receiver = "gogonegro@gmail.com"
+    body = f"""
 Your {json_data["isp"]} ADSL line performance is currently
 below the threshold.
 
@@ -40,23 +34,14 @@ Tested on {json_data["server"]["name"]} server with
 {json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
 Timestamp (UTC): {testtime}
 """
-    print(message)  # DEBUG
-    try:
-        smtpObj = smtplib.SMTP("smtp.mailtrap.io", 2525)
-        smtpObj.set_debuglevel(0)
-        smtpObj.ehlo("gmail.com")
-        smtpObj.login(smtp_user, smtp_pass)
-        smtpObj.sendmail(sender, receiver, message)
-        smtpObj.quit()
-    except smtplib.SMTPResponseException as e:
-        error_code = e.smtp_code
-        error_message = e.smtp_error
-        print(f'SMTP error: {error_code}, SMTP msg: {error_message}')
+    print(f'Subject is {subject}.')
+    print(f'Test time is {testtime}.')
+    yag = yagmail.SMTP(sender)
+    yag.send(to=receiver, subject="ADSL problems", contents="Just a test.")
 
 
 def main():
     """Run a speedtest and send email warning if under threshold."""
-    import dateutil.parser as dparser
     j_d = st_json()
     testtime = dparser.parse(j_d["timestamp"]).strftime("%A, %-d %b %Y at %H:%M:%S")
     subject_td = subject_tu = subject_tl = ""
@@ -72,7 +57,7 @@ def main():
         anomalies += 1
     if (anomalies > 0):
         subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
-        send_msg(subject, testtime, j_d)
+        send_errmsg(subject, testtime, j_d)
     else:
         print("No anomaly measured. All good.")
 

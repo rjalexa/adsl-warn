@@ -37,6 +37,7 @@ Timestamp (UTC): {testtime}
     print(f'Subject is {subject}.')
     print(f'Test time is {testtime}.')
     yag = yagmail.SMTP(sender)
+    # Following is just to debug, will use subject and body later
     yag.send(to=receiver, subject="ADSL problems", contents="Just a test.")
 
 

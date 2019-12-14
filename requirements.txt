@@ -1,6 +1,13 @@
-1) Have a copy of Ookla's SpeedTest CLI installed in /usr/local/bin
+10) Have a copy of Ookla's SpeedTest CLI installed in /usr/local/bin
     https://www.speedtest.net/apps/cli
     Note: run it from the command line the first time to confirm
     related terms and conditions.
-2) Have a valid Mailtrap account and credentials (Free plan suffices)
-    https://mailtrap.io
+20) Install the yagmail package (conda install -c conda-forge yagmail)
+30) Have a dedicated GMAIL account kept less secure to send from python
+    https://myaccount.google.com/u/0/security?hl=en&pli=1
+35) Install python's keyring library
+    conda install -c anaconda keyring
+40) Initialize the keyring with yagmail to store userid/pass safely
+    run the following python code once
+    import yagmail
+    yagmail.register('mygmailusername', 'mygmailpassword')

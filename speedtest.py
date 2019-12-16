@@ -34,8 +34,6 @@ Tested on {json_data["server"]["name"]} server with
 {json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
 Timestamp (UTC): {testtime}
 """
-    print(f'Subject is {subject}.')
-    print(f'Test time is {testtime}.')
     yag = yagmail.SMTP(sender)
     # Following is just to debug, will use subject and body later
     yag.send(to=receiver, subject=subject, contents=body)
@@ -47,16 +45,16 @@ def main():
     testtime = dparser.parse(j_d["timestamp"]).strftime("%A, %-d %b %Y at %H:%M:%S")
     subject_td = subject_tu = subject_tl = ""
     anomalies = 0
-    if (j_d["download"]["bandwidth"]/124950 < TD):
+    if j_d["download"]["bandwidth"]/124950 < TD:
         subject_td = f'DL:{j_d["download"]["bandwidth"]/124950:3.1f}'
         anomalies += 1
-    if (j_d["upload"]["bandwidth"]/124950 < TU):
+    if j_d["upload"]["bandwidth"]/124950 < TU:
         subject_tu = f'UL:{j_d["upload"]["bandwidth"]/124950:2.1f}'
         anomalies += 1
-    if (j_d["packetLoss"] > TL):
+    if j_d["packetLoss"] > TL:
         subject_tl = f'PL:{j_d["packetLoss"]:3.0f}'
         anomalies += 1
-    if (anomalies > 0):
+    if anomalies > 0:
         subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
         send_errmsg(subject, testtime, j_d)
     else:

@@ -58,7 +58,7 @@ def main():
         subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
         send_errmsg(subject, testtime, j_d)
     else:
-        print("No anomaly measured. All good.")
+        print(f'Log: {testtime} - Download: {j_d["download"]["bandwidth"]/124950:3.1f} Mbps - Upload  : {j_d["upload"]["bandwidth"]/124950:2.1f} Mbps')
 
 
 if __name__ == "__main__":

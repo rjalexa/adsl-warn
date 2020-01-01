@@ -40,16 +40,28 @@ Timestamp (UTC): {testtime}
 
 
 def main():
-    """Run a speedtest and send email warning if under threshold."""
+    """Use OOKLA's speedtest CLI to monitor ADSL line performance.
+
+    Log measured speeds to STDOUT.
+    If the UL or DL or packet losss values are below thresholds
+    then send an email to warn.
+    """
+    # perform the speedtest
     j_d = st_json()
-    testtime = dparser.parse(j_d["timestamp"]).strftime("%A, %-d %b %Y at %H:%M:%S")
+    # prepare values for logging
+    # testtime = dparser.parse(j_d["timestamp"]).strftime("%A, %-d %b %Y at %H:%M:%S")
+    testtime = dparser.parse(j_d["timestamp"]).strftime("%Y%m%d %H:%M:%S")
+    down_speed = j_d["download"]["bandwidth"]/124950
+    up_speed = j_d["upload"]["bandwidth"]/124950
+    print(f'{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload  : {up_speed:2.1f} Mbps')
+    # prepare values for anomaly email sending
     subject_td = subject_tu = subject_tl = ""
     anomalies = 0
-    if j_d["download"]["bandwidth"]/124950 < TD:
-        subject_td = f'DL:{j_d["download"]["bandwidth"]/124950:3.1f}'
+    if down_speed < TD:
+        subject_td = f'DL:{down_speed:3.1f}'
         anomalies += 1
-    if j_d["upload"]["bandwidth"]/124950 < TU:
-        subject_tu = f'UL:{j_d["upload"]["bandwidth"]/124950:2.1f}'
+    if up_speed < TU:
+        subject_tu = f'UL:{up_speed:2.1f}'
         anomalies += 1
     if j_d["packetLoss"] > TL:
         subject_tl = f'PL:{j_d["packetLoss"]:3.0f}'
@@ -57,8 +69,7 @@ def main():
     if anomalies > 0:
         subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
         send_errmsg(subject, testtime, j_d)
-    else:
-        print(f'Log: {testtime} - Download: {j_d["download"]["bandwidth"]/124950:3.1f} Mbps - Upload  : {j_d["upload"]["bandwidth"]/124950:2.1f} Mbps')
+
 
 
 if __name__ == "__main__":

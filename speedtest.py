@@ -31,7 +31,8 @@ Download: {json_data["download"]["bandwidth"]/124950:3.1f} Mbps
 Upload  : {json_data["upload"]["bandwidth"]/124950:2.1f} Mbps
 
 Tested on {json_data["server"]["name"]} server with
-{json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
+{json_data["packetLoss"]:3.3f} packet loss and\
+ {json_data["ping"]["latency"]} ping.
 Timestamp (UTC): {testtime}
 """
     yag = yagmail.SMTP(sender)
@@ -49,11 +50,11 @@ def main():
     # perform the speedtest
     j_d = st_json()
     # prepare values for logging
-    # testtime = dparser.parse(j_d["timestamp"]).strftime("%A, %-d %b %Y at %H:%M:%S")
     testtime = dparser.parse(j_d["timestamp"]).strftime("%Y%m%d %H:%M:%S")
     down_speed = j_d["download"]["bandwidth"]/124950
     up_speed = j_d["upload"]["bandwidth"]/124950
-    print(f'{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload  : {up_speed:2.1f} Mbps')
+    print(f'{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload:\
+ {up_speed:2.1f} Mbps')
     # prepare values for anomaly email sending
     subject_td = subject_tu = subject_tl = ""
     anomalies = 0
@@ -67,9 +68,9 @@ def main():
         subject_tl = f'PL:{j_d["packetLoss"]:3.0f}'
         anomalies += 1
     if anomalies > 0:
-        subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
+        subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl}\
+         exceeded threshold."
         send_errmsg(subject, testtime, j_d)
-
 
 
 if __name__ == "__main__":

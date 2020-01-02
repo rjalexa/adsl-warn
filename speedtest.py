@@ -1,16 +1,24 @@
-"""docstring."""
+"""A program to monitor your ADSL speed and warn you if it degrades.
+
+Please consult the requirements.txt file to setup necessary Gmail account.
+You should change the TD value to your normal ADSL Download speed in Mbps
+and the TU value for your normal ADSL upload speed in Mbps.
+You should also customize the two (sender and receiver) emails.
+"""
 import json
 import subprocess
 import yagmail
 import dateutil.parser as dparser
 import time
 
+# Customize the following for your own values
 TD = 210  # Threshold for download speed alert (if below)
 TU = 28  # Threshold for upload speed alert (if below)
-TL = 0  # Threshold for packet loss alert (if exceeded)
-DEFAULT_TEST_FREQUENCY = 24  # How many hours between normal line tests
 SENDER_EMAIL = "rjaalerts@gmail.com"  # A less secure Gmail account
 RECEIVER_EMAIL = "gogonegro@gmail.com"  # The desired email recipient (any)
+# usually you do not need to change the following
+TL = 0  # Threshold for packet loss alert (if exceeded)
+DEFAULT_TEST_FREQUENCY = 24  # How many hours between normal line tests
 
 
 def st_json():

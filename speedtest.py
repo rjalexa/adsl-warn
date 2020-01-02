@@ -108,16 +108,16 @@ def main():
             send_errmsg(subject, testtime, j_d, test_frequency)
             # print an  abnormal log line
             print(
-                f"{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload: {up_speed:2.1f} Mbps - Next run in {test_frequency} hours. - Email sent"
+                f"{testtime} UTC - DL:{down_speed:3.1f} Mbps UL:{up_speed:2.1f} Mbps PL:{j_d['packetLoss']} - Next in {test_frequency} hours. - Email sent"
             )
         else:
             test_frequency = DEFAULT_TEST_FREQUENCY
             # print a normal log line
             print(
-                f"{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload: {up_speed:2.1f} Mbps - Next run in {test_frequency} hours. - No email sent"
+                f"{testtime} UTC - DL:{down_speed:3.1f} Mbps UL:{up_speed:2.1f} Mbps PL:{j_d['packetLoss']} - Next in {test_frequency} hours. - No email sent"
             )
         # depending on found ADSL quality loop after waiting some time
-        time.sleep(60 * 60 * test_frequency)
+        time.sleep(60*60*test_frequency)
 
 
 if __name__ == "__main__":

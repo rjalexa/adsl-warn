@@ -117,7 +117,7 @@ def main():
                 f"{testtime} UTC - DL:{down_speed:3.1f} Mbps UL:{up_speed:2.1f} Mbps PL:{j_d['packetLoss']} - Next in {test_frequency} hours. - No email sent"
             )
         # depending on found ADSL quality loop after waiting some time
-        time.sleep(60*60*test_frequency)
+        time.sleep(60 * 60 * test_frequency)
 
 
 if __name__ == "__main__":

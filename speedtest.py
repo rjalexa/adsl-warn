@@ -3,17 +3,21 @@ import json
 import subprocess
 import yagmail
 import dateutil.parser as dparser
+import time
 
-TD = 200  # Threshold for download speed alert (if below)
-TU = 25   # Threshold for upload speed alert (if below)
-TL = 0    # Threshold for packet loss alert (if exceeded)
+TD = 210  # Threshold for download speed alert (if below)
+TU = 28  # Threshold for upload speed alert (if below)
+TL = 0  # Threshold for packet loss alert (if exceeded)
+DEFAULT_TEST_FREQUENCY = 24  # How many hours between normal line tests
 
 
 def st_json():
     """Run Ookla's speedtest and return JSON data."""
-    process = subprocess.Popen(['/usr/local/bin/speedtest', '-f', 'json'],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    process = subprocess.Popen(
+        ["/usr/local/bin/speedtest", "-f", "json"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     stdout, stderr = process.communicate()
     json_data = json.loads(stdout)
     return json_data
@@ -25,19 +29,38 @@ def send_errmsg(subject, testtime, json_data):
     receiver = "gogonegro@gmail.com"
     body = f"""
 Your {json_data["isp"]} ADSL line performance is currently
-below the threshold.
+below the threshold of DL:{TD},
 
 Download: {json_data["download"]["bandwidth"]/124950:3.1f} Mbps
 Upload  : {json_data["upload"]["bandwidth"]/124950:2.1f} Mbps
 
 Tested on {json_data["server"]["name"]} server with
-{json_data["packetLoss"]:3.3f} packet loss and\
- {json_data["ping"]["latency"]} ping.
+{json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
 Timestamp (UTC): {testtime}
 """
     yag = yagmail.SMTP(sender)
     # Following is just to debug, will use subject and body later
     yag.send(to=receiver, subject=subject, contents=body)
+
+
+def set_frequency(down, up, loss):
+    """Depending on the speed degradation change email frequency.
+
+    The returned frequency is expressed in hours.
+    """
+    down_degradation = down / TD
+    up_degradation = up / TU
+    degradation = min(down_degradation, up_degradation)
+    if degradation <= .1:
+        return 1
+    elif (degradation > .1) and (degradation <= .4):
+        return 3
+    elif (degradation > .4) and (degradation <= .8):
+        return 4
+    elif (degradation > .8) and (degradation <= .9):
+        return 6
+    else:
+        return DEFAULT_TEST_FREQUENCY
 
 
 def main():
@@ -51,26 +74,36 @@ def main():
     j_d = st_json()
     # prepare values for logging
     testtime = dparser.parse(j_d["timestamp"]).strftime("%Y%m%d %H:%M:%S")
-    down_speed = j_d["download"]["bandwidth"]/124950
-    up_speed = j_d["upload"]["bandwidth"]/124950
-    print(f'{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload:\
- {up_speed:2.1f} Mbps')
+    down_speed = j_d["download"]["bandwidth"] / 124950
+    up_speed = j_d["upload"]["bandwidth"] / 124950
+    print(
+        f"{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload: {up_speed:2.1f} Mbps"
+    )
     # prepare values for anomaly email sending
     subject_td = subject_tu = subject_tl = ""
     anomalies = 0
+    # now check if there are degraded values
     if down_speed < TD:
-        subject_td = f'DL:{down_speed:3.1f}'
+        subject_td = f"DL:{down_speed:3.1f}"
         anomalies += 1
     if up_speed < TU:
-        subject_tu = f'UL:{up_speed:2.1f}'
+        subject_tu = f"UL:{up_speed:2.1f}"
         anomalies += 1
     if j_d["packetLoss"] > TL:
         subject_tl = f'PL:{j_d["packetLoss"]:3.0f}'
         anomalies += 1
+    # if there are degraded values send the email
     if anomalies > 0:
-        subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl}\
-         exceeded threshold."
+        subject = (
+            f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
+        )
         send_errmsg(subject, testtime, j_d)
+        test_frequency = set_frequency(down_speed, up_speed, j_d["packetLoss"])
+    else:
+        test_frequency = DEFAULT_TEST_FREQUENCY
+    # depending on found ADSL quality loop after waiting some time
+    print(f"Sleeping for {test_frequency} hours now.")  # DEBUG
+    time.sleep(60 * 60 * test_frequency)
 
 
 if __name__ == "__main__":

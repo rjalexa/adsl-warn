@@ -33,13 +33,13 @@ def st_json():
     return json_data
 
 
-def send_errmsg(subject, testtime, json_data):
+def send_errmsg(subject, testtime, json_data, frequency):
     """Send an email to desired server with speedtest warning."""
     sender = SENDER_EMAIL
     receiver = RECEIVER_EMAIL
     body = f"""
 Your {json_data["isp"]} ADSL line performance is currently
-below the threshold of DL:{TD},
+below the threshold of DL:{TD} or UL:{TU} or losing packets.
 
 Download: {json_data["download"]["bandwidth"]/124950:3.1f} Mbps
 Upload  : {json_data["upload"]["bandwidth"]/124950:2.1f} Mbps
@@ -47,6 +47,7 @@ Upload  : {json_data["upload"]["bandwidth"]/124950:2.1f} Mbps
 Tested on {json_data["server"]["name"]} server with
 {json_data["packetLoss"]:3.3f} packet loss and {json_data["ping"]["latency"]} ping.
 Timestamp (UTC): {testtime}
+Retrying in {frequency} hours.
 """
     yag = yagmail.SMTP(sender)
     # Following is just to debug, will use subject and body later
@@ -87,9 +88,6 @@ def main():
         testtime = dparser.parse(j_d["timestamp"]).strftime("%Y%m%d %H:%M:%S")
         down_speed = j_d["download"]["bandwidth"] / 124950
         up_speed = j_d["upload"]["bandwidth"] / 124950
-        print(
-            f"{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload: {up_speed:2.1f} Mbps"
-        )
         # prepare values for anomaly email sending
         subject_td = subject_tu = subject_tl = ""
         anomalies = 0
@@ -106,10 +104,18 @@ def main():
         # if there are degraded values send the email
         if anomalies > 0:
             subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
-            send_errmsg(subject, testtime, j_d)
             test_frequency = set_frequency(down_speed, up_speed, j_d["packetLoss"])
+            send_errmsg(subject, testtime, j_d, test_frequency)
+            # print an  abnormal log line
+            print(
+                f"{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload: {up_speed:2.1f} Mbps - Next run in {test_frequency} hours. - Email sent"
+            )
         else:
             test_frequency = DEFAULT_TEST_FREQUENCY
+            # print a normal log line
+            print(
+                f"{testtime} UTC - Download: {down_speed:3.1f} Mbps - Upload: {up_speed:2.1f} Mbps - Next run in {test_frequency} hours. - No email sent"
+            )
         # depending on found ADSL quality loop after waiting some time
         time.sleep(60 * 60 * test_frequency)
 

@@ -10,6 +10,7 @@ import subprocess
 import yagmail
 import dateutil.parser as dparser
 import time
+import sys
 
 # Customize the following for your own values
 TD = 210  # Threshold for download speed alert (if below)
@@ -23,11 +24,15 @@ DEFAULT_TEST_FREQUENCY = 24  # How many hours between normal line tests
 
 def st_json():
     """Run Ookla's speedtest and return JSON data."""
-    process = subprocess.Popen(
-        ["/usr/local/bin/speedtest", "-f", "json"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+    try:
+        process = subprocess.Popen(
+            ["/usr/local/bin/speedtest", "-f", "json"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except FileNotFoundError as err:
+        print("Speedtest ommand not found. Program quitting!\n", err)
+        sys.exit(2)
     stdout, stderr = process.communicate()
     json_data = json.loads(stdout)
     return json_data

@@ -31,9 +31,12 @@ def st_json():
             stderr=subprocess.PIPE,
         )
     except FileNotFoundError as err:
-        print("Speedtest ommand not found. Program quitting!\n", err)
+        print("Speedtest command not found. Program quitting!\n", err)
         sys.exit(2)
     stdout, stderr = process.communicate()
+    if stderr:
+        print("--Error found--\n", stderr.decode())
+        sys.exit(3)
     json_data = json.loads(stdout)
     return json_data
 

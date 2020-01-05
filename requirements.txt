@@ -12,5 +12,5 @@
     import yagmail
     yagmail.register('mygmailusername', 'mygmailpassword')
 50) if you want to run this to log into a file even after quitting terminal
-    nohup python -u speedtest.py > adsl.log &
+    nohup python -u speedtest.py >> adsl.log &
     where -u forces python not to buffer the writes

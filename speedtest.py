@@ -8,37 +8,33 @@ You should also customize the two (sender and receiver) emails.
 import json
 import subprocess
 import yagmail
-import dateutil.parser as dparser
+from datetime import datetime
 import time
 import sys
+from pathlib import Path  # python >= 3.4
 
 # Customize the following for your own values
 TD = 210  # Threshold for download speed alert (if below)
 TU = 28  # Threshold for upload speed alert (if below)
 SENDER_EMAIL = "rjaalerts@gmail.com"  # A less secure Gmail account
 RECEIVER_EMAIL = "gogonegro@gmail.com"  # The desired email recipient (any)
-# usually you do not need to change the following
+# usually you do not need to change any the following
 TL = 0  # Threshold for packet loss alert (if exceeded)
 DEFAULT_TEST_FREQUENCY = 24  # How many hours between normal line tests
+SPEEDTEST_CLI = "/usr/local/bin/speedtest"
 
 
 def st_json():
     """Run Ookla's speedtest and return JSON data."""
-    try:
-        process = subprocess.Popen(
-            ["/usr/local/bin/speedtest", "-f", "json"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except FileNotFoundError as err:
-        print("Speedtest command not found. Program quitting!\n", err)
-        sys.exit(2)
+    process = subprocess.Popen(
+        [SPEEDTEST_CLI, "-f", "json"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     stdout, stderr = process.communicate()
     if stderr:
-        print("--Error found--\n", stderr.decode())
-        sys.exit(3)
-    json_data = json.loads(stdout)
-    return json_data
+        return False
+    else:
+        json_data = json.loads(stdout)
+        return json_data
 
 
 def send_errmsg(subject, testtime, json_data, frequency):
@@ -89,11 +85,18 @@ def main():
     If the UL or DL or packet losss values are below thresholds
     then send an email to warn.
     """
+    # first check the speedtest CLI is where we want
+    st_cli = Path(SPEEDTEST_CLI)
+    if not st_cli.is_file():
+        print('{SPEEDTEST_CLI} command not found. Program quitting!\n')
+        sys.exit(2)
+
     while True:
-        # perform the speedtest
+        # test if internet is reachable
+        # if internet is reachable perform the speedtest
         j_d = st_json()
         # prepare values for logging
-        testtime = dparser.parse(j_d["timestamp"]).strftime("%Y%m%d %H:%M:%S")
+        testtime = datetime.now()
         down_speed = j_d["download"]["bandwidth"] / 124950
         up_speed = j_d["upload"]["bandwidth"] / 124950
         # prepare values for anomaly email sending

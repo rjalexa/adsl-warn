@@ -157,9 +157,9 @@ def main():
             test_frequency = 1
             email_action_string = "Email not sent."
             diagnostic_string = "NO INTERNET"
-            speedtest_values_string = "NO SPEEDTEST"
+            speedtest_values_string = "NO CONNECTIVITY"
         print(
-            f"{testtime} UTC - {speedtest_values_string} - Diagnosis: {diagnostic_string} - Next in {test_frequency} hours. - {email_action_string}"
+            f"{testtime} - {speedtest_values_string} - Diagnosis: {diagnostic_string} - Next in {test_frequency} hours. - {email_action_string}"
         )
         # depending on found ADSL quality loop after waiting some time
         time.sleep(60 * 60 * test_frequency)

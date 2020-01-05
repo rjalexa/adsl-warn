@@ -8,29 +8,57 @@ You should also customize the two (sender and receiver) emails.
 import json
 import subprocess
 import yagmail
-import dateutil.parser as dparser
+from datetime import datetime
 import time
+import sys
+from pathlib import Path  # python >= 3.4
+import socket
 
 # Customize the following for your own values
 TD = 210  # Threshold for download speed alert (if below)
 TU = 28  # Threshold for upload speed alert (if below)
 SENDER_EMAIL = "rjaalerts@gmail.com"  # A less secure Gmail account
 RECEIVER_EMAIL = "gogonegro@gmail.com"  # The desired email recipient (any)
-# usually you do not need to change the following
+# usually you do not need to change any the following
 TL = 0  # Threshold for packet loss alert (if exceeded)
 DEFAULT_TEST_FREQUENCY = 24  # How many hours between normal line tests
+SPEEDTEST_CLI = "/usr/local/bin/speedtest"  # full path of Speedtest CLI
+SPEEDTEST_CONVERT_FACTOR = 125000  # convert speed from Ookla to MBits
+REMOTE_SERVER = "www.google.com"
+
+
+def is_internet_up(hostname):
+    """Test if DNS is working and google can be pinged.
+
+    Unfortunately the parameter to ping is OS specific with the
+    current -c good for *nix and MacOS but for Win it should be
+    changed to -n.
+    """
+    try:
+        # see if we can resolve the host name -- tells us if there is
+        # a DNS listening
+        host = socket.gethostbyname(hostname)
+        # connect to the host -- tells us if the host is actually
+        # reachable
+        s = socket.create_connection((host, 80), 2)
+        s.close()
+        return True
+    except Exception:
+        pass
+    return False
 
 
 def st_json():
     """Run Ookla's speedtest and return JSON data."""
     process = subprocess.Popen(
-        ["/usr/local/bin/speedtest", "-f", "json"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        [SPEEDTEST_CLI, "-f", "json"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     stdout, stderr = process.communicate()
-    json_data = json.loads(stdout)
-    return json_data
+    if stderr:
+        return False
+    else:
+        json_data = json.loads(stdout)
+        return json_data
 
 
 def send_errmsg(subject, testtime, json_data, frequency):
@@ -81,41 +109,58 @@ def main():
     If the UL or DL or packet losss values are below thresholds
     then send an email to warn.
     """
+    # first check the speedtest CLI is where we want
+    st_cli = Path(SPEEDTEST_CLI)
+    if not st_cli.is_file():
+        print("{SPEEDTEST_CLI} command not found. Program quitting!\n")
+        sys.exit(2)
+
     while True:
-        # perform the speedtest
-        j_d = st_json()
-        # prepare values for logging
-        testtime = dparser.parse(j_d["timestamp"]).strftime("%Y%m%d %H:%M:%S")
-        down_speed = j_d["download"]["bandwidth"] / 124950
-        up_speed = j_d["upload"]["bandwidth"] / 124950
-        # prepare values for anomaly email sending
-        subject_td = subject_tu = subject_tl = ""
-        anomalies = 0
-        # now check if there are degraded values
-        if down_speed < TD:
-            subject_td = f"DL:{down_speed:3.1f}"
-            anomalies += 1
-        if up_speed < TU:
-            subject_tu = f"UL:{up_speed:2.1f}"
-            anomalies += 1
-        if j_d["packetLoss"] > TL:
-            subject_tl = f'PL:{j_d["packetLoss"]:3.0f}'
-            anomalies += 1
-        # if there are degraded values send the email
-        if anomalies > 0:
-            subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
-            test_frequency = set_frequency(down_speed, up_speed, j_d["packetLoss"])
-            send_errmsg(subject, testtime, j_d, test_frequency)
-            # print an  abnormal log line
-            print(
-                f"{testtime} UTC - DL:{down_speed:3.1f} Mbps UL:{up_speed:2.1f} Mbps PL:{j_d['packetLoss']} - Next in {test_frequency} hours. - Email sent"
+        testtime = datetime.now()
+        # test if internet is reachable (can change in time)
+        if is_internet_up(REMOTE_SERVER):
+            # if internet is reachable perform the speedtest
+            j_d = st_json()
+            # prepare values for logging
+            down_speed = j_d["download"]["bandwidth"] / SPEEDTEST_CONVERT_FACTOR
+            up_speed = j_d["upload"]["bandwidth"] / SPEEDTEST_CONVERT_FACTOR
+            speedtest_values_string = (
+                f"DL:{down_speed:3.1f} Mbps UL:{up_speed:2.1f} Mbps PL:{j_d['packetLoss']}"
             )
+            # prepare values for anomaly email sending
+            subject_td = subject_tu = subject_tl = ""
+            anomalies = 0
+            # now check if there are anomalies
+            if down_speed < TD:
+                subject_td = f"DL:{down_speed:3.1f}"
+                anomalies += 1
+            if up_speed < TU:
+                subject_tu = f"UL:{up_speed:2.1f}"
+                anomalies += 1
+            if j_d["packetLoss"] > TL:
+                subject_tl = f'PL:{j_d["packetLoss"]:3.0f}'
+                anomalies += 1
+            # if there are anomalies send the email
+            if anomalies > 0:
+                # set the proper test frequency depending on severity of degradation
+                test_frequency = set_frequency(down_speed, up_speed, j_d["packetLoss"])
+                subject = f"ADSL warning: {subject_td} {subject_tu} {subject_tl} exceeded threshold."
+                send_errmsg(subject, testtime, j_d, test_frequency)
+                diagnostic_string = "DEGRADED"
+                email_action_string = "Email sent."
+            else:
+                test_frequency = DEFAULT_TEST_FREQUENCY
+                email_action_string = "Email not sent."
+                diagnostic_string = "NORMAL"
         else:
-            test_frequency = DEFAULT_TEST_FREQUENCY
-            # print a normal log line
-            print(
-                f"{testtime} UTC - DL:{down_speed:3.1f} Mbps UL:{up_speed:2.1f} Mbps PL:{j_d['packetLoss']} - Next in {test_frequency} hours. - No email sent"
-            )
+            # Internet host cannot be resolved/reached
+            test_frequency = 1
+            email_action_string = "Email not sent."
+            diagnostic_string = "NO INTERNET"
+            speedtest_values_string = "NO CONNECTIVITY"
+        print(
+            f"{testtime} - {speedtest_values_string} - Diagnosis: {diagnostic_string} - Next in {test_frequency} hours. - {email_action_string}"
+        )
         # depending on found ADSL quality loop after waiting some time
         time.sleep(60 * 60 * test_frequency)
 

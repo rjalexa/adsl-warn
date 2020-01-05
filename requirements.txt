@@ -14,3 +14,6 @@
 50) if you want to run this to log into a file even after quitting terminal
     nohup python -u speedtest.py >> adsl.log &
     where -u forces python not to buffer the writes
+60) There is an OS specific command "ping -c 1" which is valid on
+    Unix/Linux/MacOS hosts to see if Internet is resolvable and
+    reachable. On Windows the -c parameter must become -n
